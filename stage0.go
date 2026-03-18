@@ -17,48 +17,33 @@ var (
 )
 
 // ─── Arithmetic Helper Functions ─────────────────────────────────────────────
-
-func handleAdd() {
-	writer.WriteString("command: add\n")
+func handleArithmetic(cmd string) {
+	fmt.Fprintf(writer, "command: %s\n", cmd)
 }
-
-func handleSub() {
-	writer.WriteString("command: sub\n")
-}
-
-func handleNeg() {
-	writer.WriteString("command: neg\n")
-}
+func handleAdd() { handleArithmetic("add") }
+func handleSub() { handleArithmetic("sub") }
+func handleNeg() { handleArithmetic("neg") }
 
 // ─── Logic Helper Functions ───────────────────────────────────────────────────
 
-func handleEq() {
-	writer.WriteString("command: eq\n")
-	writer.WriteString(fmt.Sprintf("counter: %d\n", logicalCounter))
+func handleLogical(cmd string) {
+	fmt.Fprintf(writer, "command: %s\n", cmd)
+	fmt.Fprintf(writer, "counter: %d\n", logicalCounter)
 	logicalCounter++
 }
 
-func handleGt() {
-	writer.WriteString("command: gt\n")
-	writer.WriteString(fmt.Sprintf("counter: %d\n", logicalCounter))
-	logicalCounter++
-}
-
-func handleLt() {
-	writer.WriteString("command: lt\n")
-	writer.WriteString(fmt.Sprintf("counter: %d\n", logicalCounter))
-	logicalCounter++
-}
+func handleEq() { handleLogical("eq") }
+func handleGt() { handleLogical("gt") }
+func handleLt() { handleLogical("lt") }
 
 // ─── Memory Access Helper Functions ──────────────────────────────────────────
 
-func handlePush(segment string, index int) {
-	writer.WriteString(fmt.Sprintf("command: push segment: %s index: %d\n", segment, index))
+func handleMemory(cmd, segment string, index int) {
+	fmt.Fprintf(writer, "command: %s segment: %s index: %d\n", cmd, segment, index)
 }
 
-func handlePop(segment string, index int) {
-	writer.WriteString(fmt.Sprintf("command: pop segment: %s index: %d\n", segment, index))
-}
+func handlePush(segment string, index int) { handleMemory("push", segment, index) }
+func handlePop(segment string, index int)  { handleMemory("pop", segment, index) }
 
 // ─── Line Parser ──────────────────────────────────────────────────────────────
 
@@ -175,4 +160,3 @@ func main() {
 	// h. Print to screen at the end of the program
 	fmt.Printf("Output file is ready: %s.asm\n", folderName)
 }
-
