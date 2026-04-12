@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"os"
+	"strings"
 )
 
 func main() {
@@ -12,7 +13,7 @@ func main() {
 	}
 
 	input := os.Args[1]
-	output := input[:len(input)-3] + "asm"
+	output := strings.Replace(input, ".vm", ".asm", 1)
 
 	inFile, _ := os.Open(input)
 	defer inFile.Close()
@@ -28,7 +29,7 @@ func main() {
 	}
 
 	parser := NewParser(lines)
-	writer := NewCodeWriter(outFile)
+	writer := NewCodeWriter(outFile, input)
 
 	for parser.HasMoreCommands() {
 		parser.Advance()
