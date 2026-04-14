@@ -176,11 +176,7 @@ func (cw *CodeWriter) WritePushPop(cmd, segment, index string) {
 }
 
 func (cw *CodeWriter) pushD() {
-	fmt.Fprintln(cw.out, "@SP")
-	fmt.Fprintln(cw.out, "A=M")
-	fmt.Fprintln(cw.out, "M=D")
-	fmt.Fprintln(cw.out, "@SP")
-	fmt.Fprintln(cw.out, "M=M+1")
+	fmt.Fprint(cw.out, "@SP\nA=M\nM=D\n@SP\nM=M+1\n")
 }
 
 func (cw *CodeWriter) pushFromSegment(base, index string) {
@@ -189,14 +185,7 @@ func (cw *CodeWriter) pushFromSegment(base, index string) {
 
 func (cw *CodeWriter) popToSegment(base, index string) {
 	fmt.Fprintf(cw.out, "@%s\nD=A\n@%s\nD=M+D\n@R13\nM=D\n", index, base)
-
-	fmt.Fprintln(cw.out, "@SP")
-	fmt.Fprintln(cw.out, "AM=M-1")
-	fmt.Fprintln(cw.out, "D=M")
-
-	fmt.Fprintln(cw.out, "@R13")
-	fmt.Fprintln(cw.out, "A=M")
-	fmt.Fprintln(cw.out, "M=D")
+	fmt.Fprint(cw.out, "@SP\nAM=M-1\nD=M\n@R13\nA=M\nM=D\n")
 }
 
 func atoi(s string) int {

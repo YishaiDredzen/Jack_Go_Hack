@@ -1,4 +1,4 @@
 // test
 push constant 7
-push constant 8
-add
+push constant 9
+gt
