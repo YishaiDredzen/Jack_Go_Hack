@@ -7,10 +7,10 @@ import (
 )
 
 func main() {
-	//if len(os.Args) < 2 {
-	//	println("Usage: go run . test.vm")
-	//	return
-	//}
+	if len(os.Args) < 2 {
+		println("Usage: go run . test.vm")
+		return
+	}
 
 	input := os.Args[1]
 	output := strings.Replace(input, ".vm", ".asm", 1)

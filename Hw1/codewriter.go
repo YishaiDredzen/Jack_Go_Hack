@@ -181,6 +181,7 @@ func (cw *CodeWriter) pushD() {
 
 func (cw *CodeWriter) pushFromSegment(base, index string) {
 	fmt.Fprintf(cw.out, "@%s\nD=A\n@%s\nA=M+D\nD=M\n", index, base)
+
 }
 
 func (cw *CodeWriter) popToSegment(base, index string) {
