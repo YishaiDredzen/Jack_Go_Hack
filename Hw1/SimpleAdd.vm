@@ -1,0 +1,4 @@
+// test
+push constant 8
+push constant 7
+add
