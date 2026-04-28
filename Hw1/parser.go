@@ -40,6 +40,18 @@ func (p *Parser) CommandType() string {
 		return "C_PUSH"
 	case "pop":
 		return "C_POP"
+	case "label":
+		return "C_LABEL"
+	case "goto":
+		return "C_GOTO"
+	case "if-goto":
+		return "C_IF"
+	case "function":
+		return "C_FUNCTION"
+	case "call":
+		return "C_CALL"
+	case "return":
+		return "C_RETURN"
 	default:
 		return "C_ARITHMETIC"
 	}
@@ -47,14 +59,28 @@ func (p *Parser) CommandType() string {
 
 func (p *Parser) Arg1() string {
 	fields := strings.Fields(p.Current())
+	cmdType := p.CommandType()
 
-	if p.CommandType() == "C_ARITHMETIC" {
+	// C_RETURN should not call Arg1 according to the spec,
+	// but if it does, we should handle it.
+	if cmdType == "C_ARITHMETIC" {
 		return fields[0]
 	}
-	return fields[1]
+	if len(fields) > 1 {
+		return fields[1]
+	}
+	return ""
 }
 
 func (p *Parser) Arg2() string {
 	fields := strings.Fields(p.Current())
-	return fields[2]
+	cmdType := p.CommandType()
+
+	// Only these types have a second argument (usually an index or nVars/nArgs)
+	if cmdType == "C_PUSH" || cmdType == "C_POP" || cmdType == "C_FUNCTION" || cmdType == "C_CALL" {
+		if len(fields) > 2 {
+			return fields[2]
+		}
+	}
+	return ""
 }

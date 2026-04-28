@@ -7,17 +7,25 @@ import (
 )
 
 type CodeWriter struct {
-	out        *os.File
-	labelCount int
-	fileName   string
+	out             *os.File
+	labelCount      int
+	fileName        string
+	currentFunction string
+	callCount       int
 }
 
-func NewCodeWriter(out *os.File, input string) *CodeWriter {
-	parts := strings.Split(input, "\\")
-	name := parts[len(parts)-1]
-	name = strings.Replace(name, ".vm", "", 1)
+func NewCodeWriter(out *os.File) *CodeWriter {
+	return &CodeWriter{out: out}
+}
 
-	return &CodeWriter{out: out, fileName: name}
+func (cw *CodeWriter) SetFileName(name string) {
+	// This extracts "Main" from "path/to/Main.vm"
+	parts := strings.Split(name, "/")
+	if len(parts) == 1 {
+		parts = strings.Split(name, "\\")
+	}
+	filename := parts[len(parts)-1]
+	cw.fileName = strings.Replace(filename, ".vm", "", 1)
 }
 
 func (cw *CodeWriter) WriteArithmetic(cmd string) {
@@ -38,7 +46,9 @@ func (cw *CodeWriter) WriteArithmetic(cmd string) {
 		cw.unary("M=-M")
 	case "not":
 		cw.unary("M=!M")
-
+	case "add#":
+		cw.binary("M=M+D")
+		cw.unary("M=-M")
 	case "eq", "gt", "lt":
 		cw.compare(cmd)
 	}
@@ -193,4 +203,95 @@ func atoi(s string) int {
 	var n int
 	fmt.Sscanf(s, "%d", &n)
 	return n
+}
+
+// Stage 2 (8 online)
+func (cw *CodeWriter) WriteInit() {
+	fmt.Fprint(cw.out, "@256\nD=A\n@SP\nM=D\n")
+	cw.WriteCall("Sys.init", 0)
+}
+
+func (cw *CodeWriter) WriteLabel(label string) {
+	full := cw.currentFunction + "$" + label
+	fmt.Fprintf(cw.out, "(%s)\n", full)
+}
+
+func (cw *CodeWriter) WriteGoto(label string) {
+	full := cw.currentFunction + "$" + label
+	fmt.Fprintf(cw.out, "@%s\n0;JMP\n", full)
+}
+
+func (cw *CodeWriter) WriteIf(label string) {
+	full := cw.currentFunction + "$" + label
+
+	fmt.Fprint(cw.out, "@SP\nAM=M-1\nD=M\n")
+	fmt.Fprintf(cw.out, "@%s\nD;JNE\n", full)
+}
+
+func (cw *CodeWriter) WriteFunction(name string, nVars int) {
+	cw.currentFunction = name
+
+	fmt.Fprintf(cw.out, "(%s)\n", name)
+
+	for i := 0; i < nVars; i++ {
+		fmt.Fprint(cw.out, "@0\nD=A\n")
+		cw.pushD()
+	}
+}
+
+func (cw *CodeWriter) WriteCall(name string, nArgs int) {
+	returnLabel := fmt.Sprintf("%s$ret.%d", name, cw.callCount)
+	cw.callCount++
+
+	// push return address
+	fmt.Fprintf(cw.out, "@%s\nD=A\n", returnLabel)
+	cw.pushD()
+
+	// push LCL, ARG, THIS, THAT
+	for _, seg := range []string{"LCL", "ARG", "THIS", "THAT"} {
+		fmt.Fprintf(cw.out, "@%s\nD=M\n", seg)
+		cw.pushD()
+	}
+
+	// ARG = SP - nArgs - 5
+	fmt.Fprint(cw.out, "@SP\nD=M\n")
+	fmt.Fprintf(cw.out, "@%d\nD=D-A\n", nArgs)
+	fmt.Fprint(cw.out, "@5\nD=D-A\n@ARG\nM=D\n")
+
+	// LCL = SP
+	fmt.Fprint(cw.out, "@SP\nD=M\n@LCL\nM=D\n")
+
+	// goto function
+	fmt.Fprintf(cw.out, "@%s\n0;JMP\n", name)
+
+	// return label
+	fmt.Fprintf(cw.out, "(%s)\n", returnLabel)
+}
+
+func (cw *CodeWriter) WriteReturn() {
+
+	// FRAME = LCL
+	fmt.Fprint(cw.out, "@LCL\nD=M\n@R13\nM=D\n")
+
+	// RET = *(FRAME-5)
+	fmt.Fprint(cw.out, "@5\nA=D-A\nD=M\n@R14\nM=D\n")
+
+	// *ARG = pop()
+	fmt.Fprint(cw.out, "@SP\nAM=M-1\nD=M\n@ARG\nA=M\nM=D\n")
+
+	// SP = ARG + 1
+	fmt.Fprint(cw.out, "@ARG\nD=M+1\n@SP\nM=D\n")
+
+	// restore THAT, THIS, ARG, LCL
+	restore := func(offset int, seg string) {
+		fmt.Fprintf(cw.out, "@R13\nD=M\n@%d\nA=D-A\nD=M\n@%s\nM=D\n", offset, seg)
+	}
+
+	restore(1, "THAT")
+	restore(2, "THIS")
+	restore(3, "ARG")
+	restore(4, "LCL")
+
+	// goto RET
+	fmt.Fprint(cw.out, "@R14\nA=M\n0;JMP\n")
 }
