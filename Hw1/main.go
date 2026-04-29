@@ -37,29 +37,45 @@ func main() {
 				vmFiles = append(vmFiles, filepath.Join(inputPath, entry.Name()))
 			}
 		}
+
+		// 2. Initialize CodeWriter once for the entire output
+		outFile, _ := os.Create(outputPath)
+		defer outFile.Close()
+
+		writer := NewCodeWriter(outFile)
+
+		// 3. Only write bootstrap if Sys.vm is present
+		hasSys := false
+		for _, entry := range entries {
+			if entry.Name() == "Sys.vm" {
+				hasSys = true
+				break
+			}
+		}
+		if hasSys {
+			writer.WriteInit()
+		}
+
+		// 4. Process each VM file
+		for _, file := range vmFiles {
+			writer.SetFileName(file)
+			processFile(file, writer)
+		}
+
 	} else {
-		// Single file mode
+		// Single file mode — no bootstrap
 		outputPath = strings.Replace(inputPath, ".vm", ".asm", 1)
 		vmFiles = append(vmFiles, inputPath)
-	}
 
-	// 2. Initialize CodeWriter once for the entire output
-	outFile, _ := os.Create(outputPath)
-	defer outFile.Close()
+		outFile, _ := os.Create(outputPath)
+		defer outFile.Close()
 
-	writer := NewCodeWriter(outFile)
+		writer := NewCodeWriter(outFile)
 
-	// 3. Write Bootstrap Code (Required for Stage 2)
-	// Usually only needed if Sys.vm is present or in directory mode
-	writer.WriteInit()
-
-	// 4. Process each VM file
-	for _, file := range vmFiles {
-		// Update the internal fileName in CodeWriter for static segment scoping
-		// (You need to add this SetFileName method to your CodeWriter)
-		writer.SetFileName(file)
-
-		processFile(file, writer)
+		for _, file := range vmFiles {
+			writer.SetFileName(file)
+			processFile(file, writer)
+		}
 	}
 }
 

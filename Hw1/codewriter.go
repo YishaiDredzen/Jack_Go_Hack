@@ -208,6 +208,7 @@ func atoi(s string) int {
 // Stage 2 (8 online)
 func (cw *CodeWriter) WriteInit() {
 	fmt.Fprint(cw.out, "@256\nD=A\n@SP\nM=D\n")
+	cw.currentFunction = "Sys.init" // set before calling WriteCall
 	cw.WriteCall("Sys.init", 0)
 }
 
@@ -240,7 +241,7 @@ func (cw *CodeWriter) WriteFunction(name string, nVars int) {
 }
 
 func (cw *CodeWriter) WriteCall(name string, nArgs int) {
-	returnLabel := fmt.Sprintf("%s$ret.%d", name, cw.callCount)
+	returnLabel := fmt.Sprintf("%s$ret.%d", cw.currentFunction, cw.callCount)
 	cw.callCount++
 
 	// push return address
