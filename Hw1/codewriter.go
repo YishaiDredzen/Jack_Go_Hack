@@ -46,9 +46,9 @@ func (cw *CodeWriter) WriteArithmetic(cmd string) {
 		cw.unary("M=-M")
 	case "not":
 		cw.unary("M=!M")
-	case "add#":
-		cw.binary("M=M+D")
-		cw.unary("M=-M")
+	//case "add#":
+	//	cw.binary("M=M+D")
+	//	cw.unary("M=-M")
 	case "eq", "gt", "lt":
 		cw.compare(cmd)
 	}

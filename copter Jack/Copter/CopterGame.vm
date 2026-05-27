@@ -1,0 +1,940 @@
+function CopterGame.new 0
+push constant 11
+call Memory.alloc 1
+pop pointer 0
+push constant 8
+pop this 2
+push constant 64
+pop this 3
+push constant 120
+pop this 4
+push constant 68
+pop this 5
+push constant 123
+pop this 7
+push constant 0
+pop this 6
+push constant 0
+pop this 9
+push constant 0
+pop this 10
+push constant 64
+call Array.new 1
+pop this 0
+push constant 64
+call Array.new 1
+pop this 1
+push pointer 0
+call CopterGame.initCave 1
+pop temp 0
+call Copter.new 0
+pop this 8
+push pointer 0
+return
+function CopterGame.resetGame 0
+push argument 0
+pop pointer 0
+push constant 120
+pop this 4
+push constant 68
+pop this 5
+push constant 123
+pop this 7
+push constant 0
+pop this 6
+push constant 0
+pop this 9
+push pointer 0
+call CopterGame.initCave 1
+pop temp 0
+push this 8
+call Copter.reset 1
+pop temp 0
+push constant 0
+return
+function CopterGame.initCave 1
+push argument 0
+pop pointer 0
+push constant 0
+pop local 0
+label WHILE_EXP0
+push local 0
+push constant 64
+lt
+not
+if-goto WHILE_END0
+push local 0
+push this 0
+add
+push this 5
+pop temp 0
+pop pointer 1
+push temp 0
+pop that 0
+push local 0
+push this 1
+add
+push this 5
+push this 4
+add
+pop temp 0
+pop pointer 1
+push temp 0
+pop that 0
+push local 0
+push constant 1
+add
+pop local 0
+goto WHILE_EXP0
+label WHILE_END0
+push constant 0
+return
+function CopterGame.rand 0
+push argument 0
+pop pointer 0
+push this 7
+push constant 31
+call Math.multiply 2
+push constant 7
+add
+pop this 7
+push this 7
+push constant 0
+lt
+if-goto IF_TRUE0
+goto IF_FALSE0
+label IF_TRUE0
+push this 7
+neg
+pop this 7
+label IF_FALSE0
+push this 7
+push constant 32000
+gt
+if-goto IF_TRUE1
+goto IF_FALSE1
+label IF_TRUE1
+push this 7
+push constant 32000
+sub
+pop this 7
+label IF_FALSE1
+push this 7
+push this 7
+push argument 1
+call Math.divide 2
+push argument 1
+call Math.multiply 2
+sub
+return
+function CopterGame.advanceCeil 1
+push argument 0
+pop pointer 0
+push pointer 0
+push constant 3
+call CopterGame.rand 2
+pop local 0
+push local 0
+push constant 0
+eq
+if-goto IF_TRUE0
+goto IF_FALSE0
+label IF_TRUE0
+push this 5
+push constant 4
+sub
+pop this 5
+label IF_FALSE0
+push local 0
+push constant 1
+eq
+if-goto IF_TRUE1
+goto IF_FALSE1
+label IF_TRUE1
+push this 5
+push constant 4
+add
+pop this 5
+label IF_FALSE1
+push this 5
+push constant 4
+lt
+if-goto IF_TRUE2
+goto IF_FALSE2
+label IF_TRUE2
+push constant 4
+pop this 5
+label IF_FALSE2
+push this 5
+push this 4
+add
+push constant 252
+gt
+if-goto IF_TRUE3
+goto IF_FALSE3
+label IF_TRUE3
+push constant 252
+push this 4
+sub
+pop this 5
+label IF_FALSE3
+push constant 0
+return
+function CopterGame.drawCol 3
+push argument 0
+pop pointer 0
+push argument 1
+push this 2
+call Math.multiply 2
+pop local 0
+push argument 1
+push this 0
+add
+pop pointer 1
+push that 0
+pop local 1
+push argument 1
+push this 1
+add
+pop pointer 1
+push that 0
+pop local 2
+push constant 0
+not
+call Screen.setColor 1
+pop temp 0
+push local 1
+push constant 0
+gt
+if-goto IF_TRUE0
+goto IF_FALSE0
+label IF_TRUE0
+push local 0
+push constant 0
+push local 0
+push this 2
+add
+push constant 1
+sub
+push local 1
+push constant 1
+sub
+call Screen.drawRectangle 4
+pop temp 0
+label IF_FALSE0
+push local 2
+push constant 256
+lt
+if-goto IF_TRUE1
+goto IF_FALSE1
+label IF_TRUE1
+push local 0
+push local 2
+push local 0
+push this 2
+add
+push constant 1
+sub
+push constant 255
+call Screen.drawRectangle 4
+pop temp 0
+label IF_FALSE1
+push constant 0
+call Screen.setColor 1
+pop temp 0
+push local 0
+push local 1
+push local 0
+push this 2
+add
+push constant 1
+sub
+push local 2
+push constant 1
+sub
+call Screen.drawRectangle 4
+pop temp 0
+push constant 0
+return
+function CopterGame.drawAllCols 1
+push argument 0
+pop pointer 0
+push constant 0
+pop local 0
+label WHILE_EXP0
+push local 0
+push constant 64
+lt
+not
+if-goto WHILE_END0
+push pointer 0
+push local 0
+call CopterGame.drawCol 2
+pop temp 0
+push local 0
+push constant 1
+add
+pop local 0
+goto WHILE_EXP0
+label WHILE_END0
+push constant 0
+return
+function CopterGame.scrollCave 1
+push argument 0
+pop pointer 0
+push constant 0
+pop local 0
+label WHILE_EXP0
+push local 0
+push constant 63
+lt
+not
+if-goto WHILE_END0
+push local 0
+push this 0
+add
+push local 0
+push constant 1
+add
+push this 0
+add
+pop pointer 1
+push that 0
+pop temp 0
+pop pointer 1
+push temp 0
+pop that 0
+push local 0
+push this 1
+add
+push local 0
+push constant 1
+add
+push this 1
+add
+pop pointer 1
+push that 0
+pop temp 0
+pop pointer 1
+push temp 0
+pop that 0
+push local 0
+push constant 1
+add
+pop local 0
+goto WHILE_EXP0
+label WHILE_END0
+push pointer 0
+call CopterGame.advanceCeil 1
+pop temp 0
+push constant 63
+push this 0
+add
+push this 5
+pop temp 0
+pop pointer 1
+push temp 0
+pop that 0
+push constant 63
+push this 1
+add
+push this 5
+push this 4
+add
+pop temp 0
+pop pointer 1
+push temp 0
+pop that 0
+push this 6
+push constant 0
+gt
+if-goto IF_TRUE0
+goto IF_FALSE0
+label IF_TRUE0
+push this 6
+push this 6
+push constant 80
+call Math.divide 2
+push constant 80
+call Math.multiply 2
+sub
+push constant 0
+eq
+if-goto IF_TRUE1
+goto IF_FALSE1
+label IF_TRUE1
+push this 4
+push constant 48
+gt
+if-goto IF_TRUE2
+goto IF_FALSE2
+label IF_TRUE2
+push this 4
+push constant 4
+sub
+pop this 4
+label IF_FALSE2
+label IF_FALSE1
+label IF_FALSE0
+push constant 0
+return
+function CopterGame.checkCollision 7
+push argument 0
+pop pointer 0
+push this 8
+call Copter.getX 1
+pop local 0
+push this 8
+call Copter.getY 1
+pop local 1
+push this 8
+call Copter.getWidth 1
+pop local 2
+push this 8
+call Copter.getHeight 1
+pop local 3
+push local 0
+push this 2
+call Math.divide 2
+pop local 4
+push local 0
+push local 2
+add
+push this 2
+call Math.divide 2
+pop local 5
+push local 5
+push constant 63
+gt
+if-goto IF_TRUE0
+goto IF_FALSE0
+label IF_TRUE0
+push constant 63
+pop local 5
+label IF_FALSE0
+push local 4
+pop local 6
+label WHILE_EXP0
+push local 6
+push local 5
+gt
+not
+not
+if-goto WHILE_END0
+push local 1
+push local 6
+push this 0
+add
+pop pointer 1
+push that 0
+lt
+if-goto IF_TRUE1
+goto IF_FALSE1
+label IF_TRUE1
+push constant 0
+not
+return
+label IF_FALSE1
+push local 1
+push local 3
+add
+push local 6
+push this 1
+add
+pop pointer 1
+push that 0
+gt
+if-goto IF_TRUE2
+goto IF_FALSE2
+label IF_TRUE2
+push constant 0
+not
+return
+label IF_FALSE2
+push local 6
+push constant 1
+add
+pop local 6
+goto WHILE_EXP0
+label WHILE_END0
+push constant 0
+return
+function CopterGame.printScore 0
+push argument 0
+pop pointer 0
+push constant 0
+push constant 0
+call Output.moveCursor 2
+pop temp 0
+push constant 6
+call String.new 1
+push constant 83
+call String.appendChar 2
+push constant 99
+call String.appendChar 2
+push constant 111
+call String.appendChar 2
+push constant 114
+call String.appendChar 2
+push constant 101
+call String.appendChar 2
+push constant 58
+call String.appendChar 2
+call Output.printString 1
+pop temp 0
+push this 6
+call Output.printInt 1
+pop temp 0
+push constant 0
+return
+function CopterGame.run 1
+push argument 0
+pop pointer 0
+call Screen.clearScreen 0
+pop temp 0
+push constant 8
+push constant 18
+call Output.moveCursor 2
+pop temp 0
+push constant 11
+call String.new 1
+push constant 67
+call String.appendChar 2
+push constant 79
+call String.appendChar 2
+push constant 80
+call String.appendChar 2
+push constant 84
+call String.appendChar 2
+push constant 69
+call String.appendChar 2
+push constant 82
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 71
+call String.appendChar 2
+push constant 65
+call String.appendChar 2
+push constant 77
+call String.appendChar 2
+push constant 69
+call String.appendChar 2
+call Output.printString 1
+pop temp 0
+push constant 10
+push constant 12
+call Output.moveCursor 2
+pop temp 0
+push constant 23
+call String.new 1
+push constant 72
+call String.appendChar 2
+push constant 111
+call String.appendChar 2
+push constant 108
+call String.appendChar 2
+push constant 100
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 97
+call String.appendChar 2
+push constant 110
+call String.appendChar 2
+push constant 121
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 107
+call String.appendChar 2
+push constant 101
+call String.appendChar 2
+push constant 121
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 116
+call String.appendChar 2
+push constant 111
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 102
+call String.appendChar 2
+push constant 108
+call String.appendChar 2
+push constant 121
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 117
+call String.appendChar 2
+push constant 112
+call String.appendChar 2
+push constant 46
+call String.appendChar 2
+call Output.printString 1
+pop temp 0
+push constant 11
+push constant 14
+call Output.moveCursor 2
+pop temp 0
+push constant 16
+call String.new 1
+push constant 65
+call String.appendChar 2
+push constant 118
+call String.appendChar 2
+push constant 111
+call String.appendChar 2
+push constant 105
+call String.appendChar 2
+push constant 100
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 116
+call String.appendChar 2
+push constant 104
+call String.appendChar 2
+push constant 101
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 119
+call String.appendChar 2
+push constant 97
+call String.appendChar 2
+push constant 108
+call String.appendChar 2
+push constant 108
+call String.appendChar 2
+push constant 115
+call String.appendChar 2
+push constant 33
+call String.appendChar 2
+call Output.printString 1
+pop temp 0
+push constant 13
+push constant 14
+call Output.moveCursor 2
+pop temp 0
+push constant 23
+call String.new 1
+push constant 80
+call String.appendChar 2
+push constant 114
+call String.appendChar 2
+push constant 101
+call String.appendChar 2
+push constant 115
+call String.appendChar 2
+push constant 115
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 97
+call String.appendChar 2
+push constant 110
+call String.appendChar 2
+push constant 121
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 107
+call String.appendChar 2
+push constant 101
+call String.appendChar 2
+push constant 121
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 116
+call String.appendChar 2
+push constant 111
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 115
+call String.appendChar 2
+push constant 116
+call String.appendChar 2
+push constant 97
+call String.appendChar 2
+push constant 114
+call String.appendChar 2
+push constant 116
+call String.appendChar 2
+push constant 46
+call String.appendChar 2
+call Output.printString 1
+pop temp 0
+label WHILE_EXP0
+call Keyboard.keyPressed 0
+push constant 0
+eq
+not
+if-goto WHILE_END0
+push constant 20
+call Sys.wait 1
+pop temp 0
+goto WHILE_EXP0
+label WHILE_END0
+label WHILE_EXP1
+call Keyboard.keyPressed 0
+push constant 0
+eq
+not
+not
+if-goto WHILE_END1
+push constant 20
+call Sys.wait 1
+pop temp 0
+goto WHILE_EXP1
+label WHILE_END1
+call Screen.clearScreen 0
+pop temp 0
+push pointer 0
+call CopterGame.drawAllCols 1
+pop temp 0
+push this 8
+call Copter.draw 1
+pop temp 0
+push pointer 0
+call CopterGame.printScore 1
+pop temp 0
+label WHILE_EXP2
+push this 9
+not
+not
+if-goto WHILE_END2
+call Keyboard.keyPressed 0
+pop local 0
+push local 0
+push constant 0
+eq
+not
+if-goto IF_TRUE0
+goto IF_FALSE0
+label IF_TRUE0
+push this 8
+call Copter.thrust 1
+pop temp 0
+goto IF_END0
+label IF_FALSE0
+push this 8
+call Copter.applyGravity 1
+pop temp 0
+label IF_END0
+push this 8
+call Copter.velY 1
+push constant 0
+eq
+not
+if-goto IF_TRUE1
+goto IF_FALSE1
+label IF_TRUE1
+push this 8
+call Copter.erase 1
+pop temp 0
+push this 8
+call Copter.move 1
+pop temp 0
+label IF_FALSE1
+push pointer 0
+call CopterGame.scrollCave 1
+pop temp 0
+push pointer 0
+call CopterGame.drawAllCols 1
+pop temp 0
+push this 8
+call Copter.draw 1
+pop temp 0
+push pointer 0
+call CopterGame.printScore 1
+pop temp 0
+push pointer 0
+call CopterGame.checkCollision 1
+if-goto IF_TRUE2
+goto IF_FALSE2
+label IF_TRUE2
+push constant 0
+not
+pop this 9
+label IF_FALSE2
+push this 6
+push constant 1
+add
+pop this 6
+push constant 80
+call Sys.wait 1
+pop temp 0
+goto WHILE_EXP2
+label WHILE_END2
+push constant 9
+push constant 17
+call Output.moveCursor 2
+pop temp 0
+push constant 9
+call String.new 1
+push constant 71
+call String.appendChar 2
+push constant 65
+call String.appendChar 2
+push constant 77
+call String.appendChar 2
+push constant 69
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 79
+call String.appendChar 2
+push constant 86
+call String.appendChar 2
+push constant 69
+call String.appendChar 2
+push constant 82
+call String.appendChar 2
+call Output.printString 1
+pop temp 0
+push constant 11
+push constant 15
+call Output.moveCursor 2
+pop temp 0
+push constant 7
+call String.new 1
+push constant 83
+call String.appendChar 2
+push constant 99
+call String.appendChar 2
+push constant 111
+call String.appendChar 2
+push constant 114
+call String.appendChar 2
+push constant 101
+call String.appendChar 2
+push constant 58
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+call Output.printString 1
+pop temp 0
+push this 6
+call Output.printInt 1
+pop temp 0
+push constant 13
+push constant 11
+call Output.moveCursor 2
+pop temp 0
+push constant 24
+call String.new 1
+push constant 82
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 116
+call String.appendChar 2
+push constant 111
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 114
+call String.appendChar 2
+push constant 101
+call String.appendChar 2
+push constant 115
+call String.appendChar 2
+push constant 116
+call String.appendChar 2
+push constant 97
+call String.appendChar 2
+push constant 114
+call String.appendChar 2
+push constant 116
+call String.appendChar 2
+push constant 44
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 81
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 116
+call String.appendChar 2
+push constant 111
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 113
+call String.appendChar 2
+push constant 117
+call String.appendChar 2
+push constant 105
+call String.appendChar 2
+push constant 116
+call String.appendChar 2
+push constant 46
+call String.appendChar 2
+call Output.printString 1
+pop temp 0
+label WHILE_EXP3
+call Keyboard.keyPressed 0
+push constant 0
+eq
+not
+not
+if-goto WHILE_END3
+push constant 20
+call Sys.wait 1
+pop temp 0
+goto WHILE_EXP3
+label WHILE_END3
+push constant 0
+pop local 0
+label WHILE_EXP4
+push local 0
+push constant 0
+eq
+not
+if-goto WHILE_END4
+call Keyboard.keyPressed 0
+pop local 0
+push constant 20
+call Sys.wait 1
+pop temp 0
+goto WHILE_EXP4
+label WHILE_END4
+push local 0
+push constant 82
+eq
+if-goto IF_TRUE3
+goto IF_FALSE3
+label IF_TRUE3
+push pointer 0
+call CopterGame.resetGame 1
+pop temp 0
+push pointer 0
+call CopterGame.run 1
+pop temp 0
+label IF_FALSE3
+push constant 0
+return
+function CopterGame.dispose 0
+push argument 0
+pop pointer 0
+push this 8
+call Copter.dispose 1
+pop temp 0
+push this 0
+call Array.dispose 1
+pop temp 0
+push this 1
+call Array.dispose 1
+pop temp 0
+push pointer 0
+call Memory.deAlloc 1
+pop temp 0
+push constant 0
+return

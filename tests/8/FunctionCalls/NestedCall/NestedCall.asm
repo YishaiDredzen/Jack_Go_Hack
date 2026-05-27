@@ -81,7 +81,7 @@ AM=M-1
 D=M
 @THAT
 M=D
-@Sys.main$ret.1
+@Sys.init$ret.1
 D=A
 @SP
 A=M
@@ -130,7 +130,7 @@ D=M
 M=D
 @Sys.main
 0;JMP
-(Sys.main$ret.1)
+(Sys.init$ret.1)
 // C_POP temp 1
 @SP
 AM=M-1
@@ -275,7 +275,7 @@ A=M
 M=D
 @SP
 M=M+1
-@Sys.add12$ret.2
+@Sys.main$ret.2
 D=A
 @SP
 A=M
@@ -324,7 +324,7 @@ D=M
 M=D
 @Sys.add12
 0;JMP
-(Sys.add12$ret.2)
+(Sys.main$ret.2)
 // C_POP temp 0
 @SP
 AM=M-1

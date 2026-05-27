@@ -1,0 +1,67 @@
+/**
+ * Copter.jack
+ */
+class Copter {
+    field int x, y;
+    field int width, height;
+    field int velY;
+
+    constructor Copter new() {
+        let x      = 36;
+        let y      = 112;
+        let width  = 10;
+        let height = 6;
+        let velY   = 0;
+        return this;
+    }
+
+    /** Reset to starting position. */
+    method void reset() {
+        do erase();
+        let y    = 112;
+        let velY = 0;
+        return;
+    }
+
+    method void applyGravity() {
+        let velY = velY + 1;
+        if (velY > 6) { let velY = 6; }
+        return;
+    }
+
+    method void thrust() {
+        let velY = velY - 3;
+        if (velY < -6) { let velY = -6; }
+        return;
+    }
+
+    method void move() {
+        let y = y + velY;
+        if (y < 0)              { let y = 0;            let velY = 0; }
+        if (y > (255 - height)) { let y = 255 - height; let velY = 0; }
+        return;
+    }
+
+    method void draw() {
+        do Screen.setColor(true);
+        do Screen.drawRectangle(x, y, x + width, y + height);
+        return;
+    }
+
+    method void erase() {
+        do Screen.setColor(false);
+        do Screen.drawRectangle(x, y, x + width, y + height);
+        return;
+    }
+
+    method int velY()      { return velY; }
+    method int getY()      { return y; }
+    method int getHeight() { return height; }
+    method int getX()      { return x; }
+    method int getWidth()  { return width; }
+
+    method void dispose() {
+        do Memory.deAlloc(this);
+        return;
+    }
+}

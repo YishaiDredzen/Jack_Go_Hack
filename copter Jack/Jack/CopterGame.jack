@@ -1,0 +1,250 @@
+/**
+ * CopterGame.jack
+ */
+class CopterGame {
+
+    field Array ceilY;
+    field Array floorY;
+
+    field int slotW;
+    field int numSlots;
+
+    field int gapSize;
+    field int nextCeil;
+    field int score;
+    field int rng;
+
+    field Copter copter;
+    field boolean gameOver;
+    field boolean exit;
+
+    constructor CopterGame new() {
+        let slotW    = 8;
+        let numSlots = 64;
+        let gapSize  = 120;
+        let nextCeil = 68;
+        let rng      = 123;
+        let score    = 0;
+        let gameOver = false;
+        let exit     = false;
+
+        let ceilY  = Array.new(64);
+        let floorY = Array.new(64);
+
+        do initCave();
+        let copter = Copter.new();
+        return this;
+    }
+
+    method void resetGame() {
+        let gapSize  = 120;
+        let nextCeil = 68;
+        let rng      = 123;
+        let score    = 0;
+        let gameOver = false;
+        do initCave();
+        do copter.reset();
+        return;
+    }
+
+    method void initCave() {
+        var int i;
+        let i = 0;
+        while (i < 64) {
+            let ceilY[i]  = nextCeil;
+            let floorY[i] = nextCeil + gapSize;
+            let i = i + 1;
+        }
+        return;
+    }
+
+    method int rand(int range) {
+        let rng = (rng * 31) + 7;
+        if (rng < 0)     { let rng = -rng; }
+        if (rng > 32000) { let rng = rng - 32000; }
+        return rng - ((rng / range) * range);
+    }
+
+    method void advanceCeil() {
+        var int r;
+        let r = rand(3);
+        if (r = 0) { let nextCeil = nextCeil - 4; }
+        if (r = 1) { let nextCeil = nextCeil + 4; }
+        if (nextCeil < 4)               { let nextCeil = 4; }
+        if ((nextCeil + gapSize) > 252) { let nextCeil = 252 - gapSize; }
+        return;
+    }
+
+    /** Draw walls for one column. Also clears the gap area. */
+    method void drawCol(int col) {
+        var int px, cy, fy;
+        let px = col * slotW;
+        let cy = ceilY[col];
+        let fy = floorY[col];
+
+        // Top wall
+        do Screen.setColor(true);
+        if (cy > 0) {
+            do Screen.drawRectangle(px, 0, px + slotW - 1, cy - 1);
+        }
+        // Bottom wall
+        if (fy < 256) {
+            do Screen.drawRectangle(px, fy, px + slotW - 1, 255);
+        }
+        // Clear the gap
+        do Screen.setColor(false);
+        do Screen.drawRectangle(px, cy, px + slotW - 1, fy - 1);
+        return;
+    }
+
+    method void drawAllCols() {
+        var int i;
+        let i = 0;
+        while (i < 64) {
+            do drawCol(i);
+            let i = i + 1;
+        }
+        return;
+    }
+
+    method void scrollCave() {
+        var int i;
+        let i = 0;
+        while (i < 63) {
+            let ceilY[i]  = ceilY[i + 1];
+            let floorY[i] = floorY[i + 1];
+            let i = i + 1;
+        }
+        do advanceCeil();
+        let ceilY[63]  = nextCeil;
+        let floorY[63] = nextCeil + gapSize;
+
+        if (score > 0) {
+            if ((score - ((score / 80) * 80)) = 0) {
+                if (gapSize > 48) { let gapSize = gapSize - 4; }
+            }
+        }
+        return;
+    }
+
+    method boolean checkCollision() {
+        var int cx, cy, cw, ch;
+        var int leftCol, rightCol, col;
+
+        let cx = copter.getX();
+        let cy = copter.getY();
+        let cw = copter.getWidth();
+        let ch = copter.getHeight();
+
+        let leftCol  = cx / slotW;
+        let rightCol = (cx + cw) / slotW;
+        if (rightCol > 63) { let rightCol = 63; }
+
+        let col = leftCol;
+        while (~(col > rightCol)) {
+            if (cy < ceilY[col])         { return true; }
+            if ((cy + ch) > floorY[col]) { return true; }
+            let col = col + 1;
+        }
+        return false;
+    }
+
+    method void printScore() {
+        do Output.moveCursor(0, 0);
+        do Output.printString("Score:");
+        do Output.printInt(score);
+        return;
+    }
+
+    method void run() {
+        var int key;
+
+        // ── Title screen ──────────────────────────────────────
+        do Screen.clearScreen();
+        do Output.moveCursor(8, 18);
+        do Output.printString("COPTER GAME");
+        do Output.moveCursor(10, 12);
+        do Output.printString("Hold any key to fly up.");
+        do Output.moveCursor(11, 14);
+        do Output.printString("Avoid the walls!");
+        do Output.moveCursor(13, 14);
+        do Output.printString("Press any key to start.");
+
+        while (Keyboard.keyPressed() = 0) { do Sys.wait(20); }
+        while (~(Keyboard.keyPressed() = 0)) { do Sys.wait(20); }
+
+        // ── Game loop ─────────────────────────────────────────
+        do Screen.clearScreen();
+        do drawAllCols();
+        do copter.draw();
+        do printScore();
+
+        while (~gameOver) {
+            let key = Keyboard.keyPressed();
+
+            // Update velocity only — don't erase/redraw copter yet
+            if (~(key = 0)) {
+                do copter.thrust();
+            } else {
+                do copter.applyGravity();
+            }
+
+            // Only erase copter if it will actually move
+            if (~(copter.velY() = 0)) {
+                do copter.erase();
+                do copter.move();
+            }
+
+            // Scroll cave (redraws all columns, which may overdraw copter)
+            do scrollCave();
+            do drawAllCols();
+
+            // Always redraw copter on top of fresh cave
+            do copter.draw();
+
+            do printScore();
+
+            if (checkCollision()) {
+                let gameOver = true;
+            }
+
+            let score = score + 1;
+            do Sys.wait(80);
+        }
+
+        // ── Game over screen ──────────────────────────────────
+        do Output.moveCursor(9, 17);
+        do Output.printString("GAME OVER");
+        do Output.moveCursor(11, 15);
+        do Output.printString("Score: ");
+        do Output.printInt(score);
+        do Output.moveCursor(13, 11);
+        do Output.printString("R to restart, Q to quit.");
+
+        // Wait for key release first so we don't instantly re-trigger
+        while (~(Keyboard.keyPressed() = 0)) { do Sys.wait(20); }
+
+        // Now wait for R or Q
+        let key = 0;
+        while ((key = 0)) {
+            let key = Keyboard.keyPressed();
+            do Sys.wait(20);
+        }
+
+        if (key = 82) {
+            // R pressed — reset and play again
+            do resetGame();
+            do run();
+        }
+        // Any other key (Q or anything) — just return and exit
+        return;
+    }
+
+    method void dispose() {
+        do copter.dispose();
+        do ceilY.dispose();
+        do floorY.dispose();
+        do Memory.deAlloc(this);
+        return;
+    }
+}
