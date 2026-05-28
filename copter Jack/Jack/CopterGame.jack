@@ -75,7 +75,8 @@ class CopterGame {
         return;
     }
 
-    /** Draw walls for one column. Also clears the gap area. */
+    /** Draw walls for one column.
+    Also clears the gap area. */
     method void drawCol(int col) {
         var int px, cy, fy;
         let px = col * slotW;
@@ -150,15 +151,15 @@ class CopterGame {
     }
 
     method void printScore() {
-        do Output.moveCursor(0, 0);
-        do Output.printString("Score:");
+        // Move directly to where the digits sit to avoid erasing "Score:" text
+        do Output.moveCursor(0, 7);
         do Output.printInt(score);
         return;
     }
 
-    method void run() {
+    method boolean run() {
         var int key;
-
+        
         // ── Title screen ──────────────────────────────────────
         do Screen.clearScreen();
         do Output.moveCursor(8, 18);
@@ -173,35 +174,36 @@ class CopterGame {
         while (Keyboard.keyPressed() = 0) { do Sys.wait(20); }
         while (~(Keyboard.keyPressed() = 0)) { do Sys.wait(20); }
 
-        // ── Game loop ─────────────────────────────────────────
+        // ── Game loop Setup ───────────────────────────────────
         do Screen.clearScreen();
         do drawAllCols();
         do copter.draw();
+        
+        // Print the text prefix exactly once to prevent score flickering
+        do Output.moveCursor(0, 0);
+        do Output.printString("Score: ");
         do printScore();
 
         while (~gameOver) {
             let key = Keyboard.keyPressed();
 
-            // Update velocity only — don't erase/redraw copter yet
             if (~(key = 0)) {
                 do copter.thrust();
             } else {
                 do copter.applyGravity();
             }
 
-            // Only erase copter if it will actually move
+            // Only erase and redraw copter if it actually moves
             if (~(copter.velY() = 0)) {
                 do copter.erase();
                 do copter.move();
             }
 
-            // Scroll cave (redraws all columns, which may overdraw copter)
             do scrollCave();
             do drawAllCols();
 
-            // Always redraw copter on top of fresh cave
+            // Always render copter safely on top of updated grid lines
             do copter.draw();
-
             do printScore();
 
             if (checkCollision()) {
@@ -209,22 +211,21 @@ class CopterGame {
             }
 
             let score = score + 1;
-            do Sys.wait(80);
+            do Sys.wait(60);
         }
 
         // ── Game over screen ──────────────────────────────────
         do Output.moveCursor(9, 17);
         do Output.printString("GAME OVER");
         do Output.moveCursor(11, 15);
-        do Output.printString("Score: ");
+        do Output.printString("Final Score: ");
         do Output.printInt(score);
         do Output.moveCursor(13, 11);
         do Output.printString("R to restart, Q to quit.");
 
-        // Wait for key release first so we don't instantly re-trigger
+        // Wait for key release first so we don't skip panels instantly
         while (~(Keyboard.keyPressed() = 0)) { do Sys.wait(20); }
 
-        // Now wait for R or Q
         let key = 0;
         while ((key = 0)) {
             let key = Keyboard.keyPressed();
@@ -232,12 +233,11 @@ class CopterGame {
         }
 
         if (key = 82) {
-            // R pressed — reset and play again
-            do resetGame();
-            do run();
+            // Return true to signal Main.jack to run a completely new cycle loop
+            return true;
         }
-        // Any other key (Q or anything) — just return and exit
-        return;
+        
+        return false;
     }
 
     method void dispose() {

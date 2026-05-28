@@ -5,8 +5,14 @@
 class Main {
     function void main() {
         var CopterGame game;
+        var int key;
+        
         let game = CopterGame.new();
         do game.run();
+        
+        // This keeps the program alive and restarts if run() exits but game isn't closed
+        // However, a true structural loop inside run() using an outer 'while (~exit)' block is ideal.
+        
         do game.dispose();
         return;
     }
