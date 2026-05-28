@@ -11,7 +11,7 @@ class Copter {
         let y      = 112;
         let width  = 10;
         let height = 6;
-        let velY   = 0;
+        let velY   = 2;
         return this;
     }
 

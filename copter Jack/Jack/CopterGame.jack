@@ -75,8 +75,7 @@ class CopterGame {
         return;
     }
 
-    /** Draw walls for one column.
-    Also clears the gap area. */
+    /** Draw walls for one column. Also clears the gap area. */
     method void drawCol(int col) {
         var int px, cy, fy;
         let px = col * slotW;
@@ -100,9 +99,15 @@ class CopterGame {
 
     method void drawAllCols() {
         var int i;
+        var int copterLeft, copterRight;
+        // Skip columns occupied by the copter so we never erase it
+        let copterLeft  = copter.getX() / slotW;
+        let copterRight = (copter.getX() + copter.getWidth()) / slotW;
         let i = 0;
         while (i < 64) {
-            do drawCol(i);
+            if ((i < copterLeft) | (i > copterRight)) {
+                do drawCol(i);
+            }
             let i = i + 1;
         }
         return;
@@ -151,15 +156,15 @@ class CopterGame {
     }
 
     method void printScore() {
-        // Move directly to where the digits sit to avoid erasing "Score:" text
-        do Output.moveCursor(0, 7);
+        do Output.moveCursor(0, 0);
+        do Output.printString("Score:");
         do Output.printInt(score);
         return;
     }
 
-    method boolean run() {
+    method void run() {
         var int key;
-        
+
         // ── Title screen ──────────────────────────────────────
         do Screen.clearScreen();
         do Output.moveCursor(8, 18);
@@ -174,36 +179,33 @@ class CopterGame {
         while (Keyboard.keyPressed() = 0) { do Sys.wait(20); }
         while (~(Keyboard.keyPressed() = 0)) { do Sys.wait(20); }
 
-        // ── Game loop Setup ───────────────────────────────────
+        // ── Game loop ─────────────────────────────────────────
         do Screen.clearScreen();
         do drawAllCols();
         do copter.draw();
-        
-        // Print the text prefix exactly once to prevent score flickering
-        do Output.moveCursor(0, 0);
-        do Output.printString("Score: ");
         do printScore();
 
         while (~gameOver) {
             let key = Keyboard.keyPressed();
 
+            // Update velocity only - don't erase/redraw copter yet
             if (~(key = 0)) {
                 do copter.thrust();
             } else {
                 do copter.applyGravity();
             }
 
-            // Only erase and redraw copter if it actually moves
-            if (~(copter.velY() = 0)) {
-                do copter.erase();
-                do copter.move();
-            }
+            // Erase and move copter
+            do copter.erase();
+            do copter.move();
 
+            // Scroll and redraw cave - skips copter columns so it stays visible
             do scrollCave();
             do drawAllCols();
 
-            // Always render copter safely on top of updated grid lines
+            // Redraw copter
             do copter.draw();
+
             do printScore();
 
             if (checkCollision()) {
@@ -211,19 +213,19 @@ class CopterGame {
             }
 
             let score = score + 1;
-            do Sys.wait(60);
+            do Sys.wait(80);
         }
 
         // ── Game over screen ──────────────────────────────────
         do Output.moveCursor(9, 17);
         do Output.printString("GAME OVER");
         do Output.moveCursor(11, 15);
-        do Output.printString("Final Score: ");
+        do Output.printString("Score: ");
         do Output.printInt(score);
         do Output.moveCursor(13, 11);
-        do Output.printString("R to restart, Q to quit.");
+        do Output.printString("Press any key to restart");
 
-        // Wait for key release first so we don't skip panels instantly
+        // Wait for key release first so we don't instantly re-trigger
         while (~(Keyboard.keyPressed() = 0)) { do Sys.wait(20); }
 
         let key = 0;
@@ -232,12 +234,11 @@ class CopterGame {
             do Sys.wait(20);
         }
 
-        if (key = 82) {
-            // Return true to signal Main.jack to run a completely new cycle loop
-            return true;
-        }
+        do resetGame();
+        do run();
         
-        return false;
+        // Any other key (Q or anything) - just return and exit
+        return;
     }
 
     method void dispose() {
