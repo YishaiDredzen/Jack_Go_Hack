@@ -11,16 +11,27 @@ type Node struct {
 	Children []*Node // Array of nested elements
 }
 
+// terminal token types — these are always single-line leaf nodes
+var terminalTypes = map[string]bool{
+	"keyword":         true,
+	"symbol":          true,
+	"integerConstant": true,
+	"stringConstant":  true,
+	"identifier":      true,
+}
+
 // ToXML recursively creates the structured XML format required for Lab 4
 func (n *Node) ToXML(indent int) string {
 	indentStr := strings.Repeat("  ", indent) // 2 spaces per indentation level
 
-	// If it has no children, it's a leaf/terminal node
-	if len(n.Children) == 0 {
+	// Terminal nodes are always single-line: <keyword> let </keyword>
+	if terminalTypes[n.Type] {
 		return fmt.Sprintf("%s<%s> %s </%s>\n", indentStr, n.Type, escapeXML(n.Value), n.Type)
 	}
 
-	// If it has children, it's a non-terminal container
+	// Non-terminal containers always use the two-line open/close format,
+	// even when empty — nand2tetris TextComparer requires this for
+	// parameterList, expressionList, statements, etc.
 	var sb strings.Builder
 	sb.WriteString(fmt.Sprintf("%s<%s>\n", indentStr, n.Type))
 	for _, child := range n.Children {

@@ -2,37 +2,83 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"log"
 	"my_compiler/parser"
 	"my_compiler/tokenizer"
+	"os"
+	"path/filepath"
+	"strings"
 )
 
 func main() {
-	// Replace this path string with your actual Jack source file inside VS Code
-	filePath := "Main.jack"
-
-	content, err := ioutil.ReadFile(filePath)
-	if err != nil {
-		log.Fatalf("Failed to open file: %v", err)
+	// Pass a path as a command-line argument, or default to current directory
+	inputPath := "."
+	if len(os.Args) > 1 {
+		inputPath = os.Args[1]
 	}
 
-	// 1. Run Lexical analysis (Lab 4 Part 1)
+	info, err := os.Stat(inputPath)
+	if err != nil {
+		log.Fatalf("Cannot access path: %v", err)
+	}
+
+	var jackFiles []string
+
+	if info.IsDir() {
+		// Collect all .jack files in the directory
+		entries, err := os.ReadDir(inputPath)
+		if err != nil {
+			log.Fatalf("Cannot read directory: %v", err)
+		}
+		for _, e := range entries {
+			if !e.IsDir() && strings.HasSuffix(e.Name(), ".jack") {
+				jackFiles = append(jackFiles, filepath.Join(inputPath, e.Name()))
+			}
+		}
+		if len(jackFiles) == 0 {
+			log.Fatalf("No .jack files found in: %s", inputPath)
+		}
+	} else {
+		// Single file
+		jackFiles = []string{inputPath}
+	}
+
+	for _, filePath := range jackFiles {
+		processFile(filePath)
+	}
+}
+
+func processFile(filePath string) {
+	content, err := os.ReadFile(filePath)
+	if err != nil {
+		log.Fatalf("Failed to read file %s: %v", filePath, err)
+	}
+
+	// 1. Lexical analysis
 	tokens := tokenizer.Tokenize(string(content))
 
-	// 2. Run Syntax parsing (Lab 4 Part 2)
+	// 2. Syntax parsing
 	p := parser.NewParser(tokens)
 	astTree := p.ParseClass()
 
-	// 3. Convert AST properties directly into clean XML tags
+	// 3. Convert to XML
 	xmlOutput := astTree.ToXML(0)
 
-	// 4. Save file out for testing
-	outputFile := "MainOutput.xml"
-	err = ioutil.WriteFile(outputFile, []byte(xmlOutput), 0644)
+	// 4. Write output to an 'output' folder next to the .jack file
+	//    so we never overwrite the expected .xml files from nand2tetris
+	dir := filepath.Dir(filePath)
+	outputDir := filepath.Join(dir, "output")
+	if err := os.MkdirAll(outputDir, 0755); err != nil {
+		log.Fatalf("Failed to create output directory: %v", err)
+	}
+
+	baseName := strings.TrimSuffix(filepath.Base(filePath), ".jack") + ".xml"
+	outputFile := filepath.Join(outputDir, baseName)
+
+	err = os.WriteFile(outputFile, []byte(xmlOutput), 0644)
 	if err != nil {
 		log.Fatalf("Failed to write XML output: %v", err)
 	}
 
-	fmt.Printf("Success! Syntax analysis XML saved to %s\n", outputFile)
+	fmt.Printf("✓ %s\n  → %s\n", filePath, outputFile)
 }

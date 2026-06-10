@@ -24,152 +24,393 @@ func (p *Parser) advance() {
 	p.pos++
 }
 
-// 1. ParseClass: entry point for a .jack file
+// peek returns the token at pos+offset without advancing
+func (p *Parser) peek(offset int) *tokenizer.Token {
+	i := p.pos + offset
+	if i >= len(p.tokens) {
+		return nil
+	}
+	return p.tokens[i]
+}
+
+// consumeToken appends the current token as a child node and advances
+func (p *Parser) consumeToken(parent *Node) {
+	if p.current() == nil {
+		return
+	}
+	parent.Children = append(parent.Children, &Node{
+		Type:  p.current().TokenType,
+		Value: p.current().Value,
+	})
+	p.advance()
+}
+
+// ─────────────────────────────────────────────
+// 1. ParseClass
+// ─────────────────────────────────────────────
+
 func (p *Parser) ParseClass() *Node {
 	classNode := &Node{Type: "class"}
 
-	// Consume 'class'
-	if p.current() != nil {
-		classNode.Children = append(classNode.Children, &Node{Type: "keyword", Value: p.current().Value})
-		p.advance()
-	}
+	p.consumeToken(classNode) // 'class'
+	p.consumeToken(classNode) // className
+	p.consumeToken(classNode) // '{'
 
-	// Consume className
-	if p.current() != nil {
-		classNode.Children = append(classNode.Children, &Node{Type: "identifier", Value: p.current().Value})
-		p.advance()
-	}
-
-	// Consume '{'
-	if p.current() != nil {
-		classNode.Children = append(classNode.Children, &Node{Type: "symbol", Value: p.current().Value})
-		p.advance()
-	}
-
-	// Parse class variable declarations (static / field) loop
 	for p.current() != nil && (p.current().Value == "static" || p.current().Value == "field") {
 		classNode.Children = append(classNode.Children, p.CompileClassVarDec())
 	}
 
-	// Parse subroutine declarations (constructor / function / method) loop
 	for p.current() != nil && (p.current().Value == "constructor" || p.current().Value == "function" || p.current().Value == "method") {
 		classNode.Children = append(classNode.Children, p.CompileSubroutine())
 	}
 
-	// Consume '}'
-	if p.current() != nil && p.current().Value == "}" {
-		classNode.Children = append(classNode.Children, &Node{Type: "symbol", Value: p.current().Value})
-		p.advance()
-	}
+	p.consumeToken(classNode) // '}'
 
 	return classNode
 }
 
-// 2. CompileClassVarDec: Parses lines like "field int score;"
+// ─────────────────────────────────────────────
+// 2. CompileClassVarDec
+// ─────────────────────────────────────────────
+
 func (p *Parser) CompileClassVarDec() *Node {
 	node := &Node{Type: "classVarDec"}
 
-	// 'static' or 'field'
-	node.Children = append(node.Children, &Node{Type: "keyword", Value: p.current().Value})
-	p.advance()
+	p.consumeToken(node) // 'static' or 'field'
+	p.consumeToken(node) // type
+	p.consumeToken(node) // varName
 
-	// Type (int, char, boolean, or class name)
-	node.Children = append(node.Children, &Node{Type: p.current().TokenType, Value: p.current().Value})
-	p.advance()
-
-	// Variable Name
-	node.Children = append(node.Children, &Node{Type: "identifier", Value: p.current().Value})
-	p.advance()
-
-	// Handle extra variables on the same line separated by commas (e.g., field int x, y, z;)
 	for p.current() != nil && p.current().Value == "," {
-		node.Children = append(node.Children, &Node{Type: "symbol", Value: ","})
-		p.advance()
-		node.Children = append(node.Children, &Node{Type: "identifier", Value: p.current().Value})
-		p.advance()
+		p.consumeToken(node) // ','
+		p.consumeToken(node) // varName
 	}
 
-	// ';'
-	node.Children = append(node.Children, &Node{Type: "symbol", Value: ";"})
-	p.advance()
-
+	p.consumeToken(node) // ';'
 	return node
 }
 
-// 3. CompileSubroutine: Parses methods and functions safely
+// ─────────────────────────────────────────────
+// 3. CompileSubroutine
+// ─────────────────────────────────────────────
+
 func (p *Parser) CompileSubroutine() *Node {
 	node := &Node{Type: "subroutineDec"}
 
-	// 'constructor', 'function', or 'method'
-	node.Children = append(node.Children, &Node{Type: "keyword", Value: p.current().Value})
-	p.advance()
-
-	// Return type ('void' or data type)
-	node.Children = append(node.Children, &Node{Type: p.current().TokenType, Value: p.current().Value})
-	p.advance()
-
-	// Subroutine name
-	node.Children = append(node.Children, &Node{Type: "identifier", Value: p.current().Value})
-	p.advance()
-
-	// '('
-	node.Children = append(node.Children, &Node{Type: "symbol", Value: "("})
-	p.advance()
-
-	// Parameter List
+	p.consumeToken(node) // 'constructor' | 'function' | 'method'
+	p.consumeToken(node) // return type
+	p.consumeToken(node) // subroutine name
+	p.consumeToken(node) // '('
 	node.Children = append(node.Children, p.CompileParameterList())
+	p.consumeToken(node) // ')'
+	node.Children = append(node.Children, p.CompileSubroutineBody())
 
-	// ')'
-	node.Children = append(node.Children, &Node{Type: "symbol", Value: ")"})
-	p.advance()
-
-	// --- Parse the Subroutine Body safely ---
-	subBody := &Node{Type: "subroutineBody"}
-	
-	// Consume '{'
-	if p.current() != nil {
-		subBody.Children = append(subBody.Children, &Node{Type: "symbol", Value: p.current().Value})
-		p.advance()
-	}
-
-	// Skip internal tokens inside function body until we find the closing '}'
-	for p.current() != nil && p.current().Value != "}" {
-		p.advance()
-	}
-
-	// Consume '}'
-	if p.current() != nil && p.current().Value == "}" {
-		subBody.Children = append(subBody.Children, &Node{Type: "symbol", Value: "}"})
-		p.advance()
-	}
-
-	node.Children = append(node.Children, subBody)
 	return node
 }
 
-// 4. CompileParameterList: Parses argument lists
+// ─────────────────────────────────────────────
+// 4. CompileParameterList
+// ─────────────────────────────────────────────
+
 func (p *Parser) CompileParameterList() *Node {
 	node := &Node{Type: "parameterList"}
 
-	// If empty parameter list, return node immediately
-	if p.current() != nil && p.current().Value == ")" {
+	if p.current() == nil || p.current().Value == ")" {
 		return node
 	}
 
-	// First type & arg
-	node.Children = append(node.Children, &Node{Type: p.current().TokenType, Value: p.current().Value})
-	p.advance()
-	node.Children = append(node.Children, &Node{Type: "identifier", Value: p.current().Value})
-	p.advance()
+	p.consumeToken(node) // type
+	p.consumeToken(node) // varName
 
-	// Loop for remaining commas and arguments
 	for p.current() != nil && p.current().Value == "," {
-		node.Children = append(node.Children, &Node{Type: "symbol", Value: ","})
-		p.advance()
-		node.Children = append(node.Children, &Node{Type: p.current().TokenType, Value: p.current().Value})
-		p.advance()
-		node.Children = append(node.Children, &Node{Type: "identifier", Value: p.current().Value})
-		p.advance()
+		p.consumeToken(node) // ','
+		p.consumeToken(node) // type
+		p.consumeToken(node) // varName
+	}
+
+	return node
+}
+
+// ─────────────────────────────────────────────
+// 5. CompileSubroutineBody
+// ─────────────────────────────────────────────
+
+func (p *Parser) CompileSubroutineBody() *Node {
+	node := &Node{Type: "subroutineBody"}
+
+	p.consumeToken(node) // '{'
+
+	// Zero or more varDec
+	for p.current() != nil && p.current().Value == "var" {
+		node.Children = append(node.Children, p.CompileVarDec())
+	}
+
+	// statements
+	node.Children = append(node.Children, p.CompileStatements())
+
+	p.consumeToken(node) // '}'
+	return node
+}
+
+// ─────────────────────────────────────────────
+// 6. CompileVarDec
+// ─────────────────────────────────────────────
+
+func (p *Parser) CompileVarDec() *Node {
+	node := &Node{Type: "varDec"}
+
+	p.consumeToken(node) // 'var'
+	p.consumeToken(node) // type
+	p.consumeToken(node) // varName
+
+	for p.current() != nil && p.current().Value == "," {
+		p.consumeToken(node) // ','
+		p.consumeToken(node) // varName
+	}
+
+	p.consumeToken(node) // ';'
+	return node
+}
+
+// ─────────────────────────────────────────────
+// 7. CompileStatements
+// ─────────────────────────────────────────────
+
+func (p *Parser) CompileStatements() *Node {
+	node := &Node{Type: "statements"}
+
+	for p.current() != nil {
+		switch p.current().Value {
+		case "let":
+			node.Children = append(node.Children, p.CompileLetStatement())
+		case "if":
+			node.Children = append(node.Children, p.CompileIfStatement())
+		case "while":
+			node.Children = append(node.Children, p.CompileWhileStatement())
+		case "do":
+			node.Children = append(node.Children, p.CompileDoStatement())
+		case "return":
+			node.Children = append(node.Children, p.CompileReturnStatement())
+		default:
+			// No more statements
+			return node
+		}
+	}
+
+	return node
+}
+
+// ─────────────────────────────────────────────
+// 8. CompileLetStatement
+// ─────────────────────────────────────────────
+
+func (p *Parser) CompileLetStatement() *Node {
+	node := &Node{Type: "letStatement"}
+
+	p.consumeToken(node) // 'let'
+	p.consumeToken(node) // varName
+
+	// Optional array index: '[' expression ']'
+	if p.current() != nil && p.current().Value == "[" {
+		p.consumeToken(node) // '['
+		node.Children = append(node.Children, p.CompileExpression())
+		p.consumeToken(node) // ']'
+	}
+
+	p.consumeToken(node) // '='
+	node.Children = append(node.Children, p.CompileExpression())
+	p.consumeToken(node) // ';'
+
+	return node
+}
+
+// ─────────────────────────────────────────────
+// 9. CompileIfStatement
+// ─────────────────────────────────────────────
+
+func (p *Parser) CompileIfStatement() *Node {
+	node := &Node{Type: "ifStatement"}
+
+	p.consumeToken(node) // 'if'
+	p.consumeToken(node) // '('
+	node.Children = append(node.Children, p.CompileExpression())
+	p.consumeToken(node) // ')'
+	p.consumeToken(node) // '{'
+	node.Children = append(node.Children, p.CompileStatements())
+	p.consumeToken(node) // '}'
+
+	// Optional 'else'
+	if p.current() != nil && p.current().Value == "else" {
+		p.consumeToken(node) // 'else'
+		p.consumeToken(node) // '{'
+		node.Children = append(node.Children, p.CompileStatements())
+		p.consumeToken(node) // '}'
+	}
+
+	return node
+}
+
+// ─────────────────────────────────────────────
+// 10. CompileWhileStatement
+// ─────────────────────────────────────────────
+
+func (p *Parser) CompileWhileStatement() *Node {
+	node := &Node{Type: "whileStatement"}
+
+	p.consumeToken(node) // 'while'
+	p.consumeToken(node) // '('
+	node.Children = append(node.Children, p.CompileExpression())
+	p.consumeToken(node) // ')'
+	p.consumeToken(node) // '{'
+	node.Children = append(node.Children, p.CompileStatements())
+	p.consumeToken(node) // '}'
+
+	return node
+}
+
+// ─────────────────────────────────────────────
+// 11. CompileDoStatement
+// ─────────────────────────────────────────────
+
+func (p *Parser) CompileDoStatement() *Node {
+	node := &Node{Type: "doStatement"}
+
+	p.consumeToken(node) // 'do'
+	p.compileSubroutineCall(node)
+	p.consumeToken(node) // ';'
+
+	return node
+}
+
+// compileSubroutineCall handles: name(...) or name.name(...)
+// It is called with the identifier already NOT consumed yet.
+func (p *Parser) compileSubroutineCall(parent *Node) {
+	p.consumeToken(parent) // subroutineName or className/varName
+
+	if p.current() != nil && p.current().Value == "." {
+		p.consumeToken(parent) // '.'
+		p.consumeToken(parent) // subroutineName
+	}
+
+	p.consumeToken(parent) // '('
+	parent.Children = append(parent.Children, p.CompileExpressionList())
+	p.consumeToken(parent) // ')'
+}
+
+// ─────────────────────────────────────────────
+// 12. CompileReturnStatement
+// ─────────────────────────────────────────────
+
+func (p *Parser) CompileReturnStatement() *Node {
+	node := &Node{Type: "returnStatement"}
+
+	p.consumeToken(node) // 'return'
+
+	// Optional return expression
+	if p.current() != nil && p.current().Value != ";" {
+		node.Children = append(node.Children, p.CompileExpression())
+	}
+
+	p.consumeToken(node) // ';'
+	return node
+}
+
+// ─────────────────────────────────────────────
+// 13. CompileExpression
+// ─────────────────────────────────────────────
+
+var opSet = map[string]bool{
+	"+": true, "-": true, "*": true, "/": true,
+	"&": true, "|": true, "<": true, ">": true, "=": true,
+}
+
+func (p *Parser) CompileExpression() *Node {
+	node := &Node{Type: "expression"}
+
+	node.Children = append(node.Children, p.CompileTerm())
+
+	// (op term)*
+	for p.current() != nil && opSet[p.current().Value] {
+		p.consumeToken(node) // op
+		node.Children = append(node.Children, p.CompileTerm())
+	}
+
+	return node
+}
+
+// ─────────────────────────────────────────────
+// 14. CompileTerm
+// ─────────────────────────────────────────────
+
+func (p *Parser) CompileTerm() *Node {
+	node := &Node{Type: "term"}
+
+	if p.current() == nil {
+		return node
+	}
+
+	tok := p.current()
+
+	switch {
+	// integerConstant
+	case tok.TokenType == "integerConstant":
+		p.consumeToken(node)
+
+	// stringConstant
+	case tok.TokenType == "stringConstant":
+		p.consumeToken(node)
+
+	// keywordConstant: true, false, null, this
+	case tok.Value == "true" || tok.Value == "false" || tok.Value == "null" || tok.Value == "this":
+		p.consumeToken(node)
+
+	// '(' expression ')'
+	case tok.Value == "(":
+		p.consumeToken(node) // '('
+		node.Children = append(node.Children, p.CompileExpression())
+		p.consumeToken(node) // ')'
+
+	// unaryOp term: '-' or '~'
+	case tok.Value == "-" || tok.Value == "~":
+		p.consumeToken(node) // unaryOp
+		node.Children = append(node.Children, p.CompileTerm())
+
+	// identifier: could be varName, varName[expr], subroutineCall
+	case tok.TokenType == "identifier":
+		next := p.peek(1)
+		if next != nil && next.Value == "[" {
+			// varName '[' expression ']'
+			p.consumeToken(node) // varName
+			p.consumeToken(node) // '['
+			node.Children = append(node.Children, p.CompileExpression())
+			p.consumeToken(node) // ']'
+		} else if next != nil && (next.Value == "(" || next.Value == ".") {
+			// subroutineCall
+			p.compileSubroutineCall(node)
+		} else {
+			// plain varName
+			p.consumeToken(node)
+		}
+	}
+
+	return node
+}
+
+// ─────────────────────────────────────────────
+// 15. CompileExpressionList
+// ─────────────────────────────────────────────
+
+func (p *Parser) CompileExpressionList() *Node {
+	node := &Node{Type: "expressionList"}
+
+	if p.current() == nil || p.current().Value == ")" {
+		return node
+	}
+
+	node.Children = append(node.Children, p.CompileExpression())
+
+	for p.current() != nil && p.current().Value == "," {
+		p.consumeToken(node) // ','
+		node.Children = append(node.Children, p.CompileExpression())
 	}
 
 	return node
