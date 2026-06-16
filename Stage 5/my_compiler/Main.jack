@@ -1,8 +1,0 @@
-class Main {
-    field int score;
-    field int x, y;
-    static boolean isGameOver;
-
-    function void test(int a, char b) {
-    }
-}
